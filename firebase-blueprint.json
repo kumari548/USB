@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user information and preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "role": { "type": "string", "enum": ["user", "admin"] }
+      },
+      "required": ["uid", "email"]
+    },
+    "USBScan": {
+      "title": "USB Scan Result",
+      "description": "Stores the results of a USB device scan.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner UID" },
+        "vid": { "type": "string", "description": "Vendor ID" },
+        "pid": { "type": "string", "description": "Product ID" },
+        "serialNumber": { "type": "string" },
+        "deviceClass": { "type": "string" },
+        "firmwareHash": { "type": "string" },
+        "description": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "score": { "type": "number" },
+        "verdict": { "type": "string", "enum": ["SAFE", "SUSPICIOUS", "DANGEROUS"] },
+        "analysis": {
+          "type": "object",
+          "properties": {
+            "whitelist": { "type": "boolean" },
+            "integrity": { "type": "boolean" },
+            "behavioral": { "type": "string" },
+            "aiAnomaly": { "type": "number" }
+          }
+        },
+        "technicalReasoning": { "type": "string" }
+      },
+      "required": ["uid", "vid", "pid", "score", "verdict"]
+    },
+    "ThreatIntel": {
+      "title": "Threat Intelligence",
+      "description": "Global database of known malicious USB signatures.",
+      "type": "object",
+      "properties": {
+        "signature": { "type": "string" },
+        "type": { "type": "string" },
+        "severity": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["signature", "type"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/scans/{scanId}": {
+      "schema": "USBScan",
+      "description": "USB scan history"
+    },
+    "/threat-intel/{intelId}": {
+      "schema": "ThreatIntel",
+      "description": "Global threat database"
+    }
+  }
+}

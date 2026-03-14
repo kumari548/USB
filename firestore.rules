@@ -1,0 +1,94 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: {userId}
+// Fields:
+//   - uid: string (required) - Firebase Auth UID
+//   - email: string (required) - User email
+//   - displayName: string (optional)
+//   - photoURL: string (optional)
+//   - createdAt: timestamp (required)
+//   - role: string (required) - 'user' or 'admin'
+//
+// Collection: scans
+// Document ID: {scanId}
+// Fields:
+//   - uid: string (required) - Owner UID
+//   - vid: string (required) - Vendor ID
+//   - pid: string (required) - Product ID
+//   - serialNumber: string (optional)
+//   - deviceClass: string (optional)
+//   - firmwareHash: string (optional)
+//   - description: string (optional)
+//   - timestamp: timestamp (required)
+//   - score: number (required) - 0-100
+//   - verdict: string (required) - 'SAFE', 'SUSPICIOUS', 'DANGEROUS'
+//   - analysis: map (required)
+//   - technicalReasoning: string (optional)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "domakumarireddy@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid is string &&
+             data.email is string;
+    }
+
+    function isValidScan(data) {
+      return data.keys().hasAll(['uid', 'vid', 'pid', 'score', 'verdict']) &&
+             data.uid == request.auth.uid &&
+             data.score is number && data.score >= 0 && data.score <= 100 &&
+             data.verdict in ['SAFE', 'SUSPICIOUS', 'DANGEROUS'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin()) && request.resource.data.role == resource.data.role;
+    }
+
+    match /scans/{scanId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidScan(request.resource.data);
+      allow update: if false; // Scans are immutable history
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /threat-intel/{intelId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

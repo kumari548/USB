@@ -1,0 +1,8 @@
+{
+  "name": "USB TrustGuard AI",
+  "description": "A production-ready cybersecurity application for hardware-level USB verification, AI anomaly detection, and firmware analysis with interactive 3D visualizations.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
